@@ -30,7 +30,7 @@
 - **Communication:** class messages and announcements
 - **Local account management:** encrypted credential storage and logout
 
-See the [command reference](docs/FEATURES.md) for every command, alias, and flag.
+See the [command reference](docs/FEATURES.md) for commands and the [agent interface](docs/AGENT_INTERFACE.md) for JSON output, scoped IDs, schemas, and exit statuses.
 
 ## Tech Stack
 
