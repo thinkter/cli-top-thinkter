@@ -361,7 +361,7 @@ func (s Session) applyLeave(o Options) error {
 	}
 	after, err := fetchLeaveRequests(s.RegNo, s.Cookies)
 	if err != nil {
-		return err
+		return contract.Wrap("partial_failure", "Leave request was submitted; status could not be confirmed. Inspect leave status before submitting again.", err)
 	}
 	if !wasLeaveSubmitted(before, after, input) {
 		return contract.New("upstream_error", "Leave submission could not be verified; check its status before retrying.")
@@ -435,7 +435,7 @@ func (s Session) applyNightslip(o Options) error {
 	}
 	after, err := fetchNightSlipRequests(s.RegNo, s.Cookies)
 	if err != nil {
-		return contract.Wrap("upstream_error", "Submission outcome is unknown; check nightslip status before retrying.", err)
+		return contract.Wrap("partial_failure", "Nightslip request was submitted; status could not be confirmed. Inspect nightslip status before submitting again.", err)
 	}
 	if !wasNightSlipSubmitted(before, after, input.NightSlipApplyInput) {
 		return contract.New("upstream_error", "Nightslip submission could not be verified; check status before retrying.")

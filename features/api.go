@@ -395,7 +395,7 @@ func (s Session) academic(name string, sem types.Semester) (any, error) {
 	return nil, contract.New("invalid_arguments", "Unknown academic command.")
 }
 func examDTO(e types.ExamEvent) types.Exam {
-	return types.Exam{Code: e.CourseCode, Title: e.CourseTitle, Slot: e.Slot, Date: e.ExamDate.Format("2006-01-02"), Time: e.ExamTime, Venue: e.Venue, Seat: e.Seat, Category: e.Category}
+	return types.Exam{Code: e.CourseCode, Title: e.CourseTitle, Slot: e.Slot, Date: e.ExamDate.Format("2006-01-02"), Time: e.ExamTime, Venue: e.Venue, Seat: e.Seat, SeatNo: e.SeatNo, Category: e.Category}
 }
 func form(values map[string]string) string {
 	v := url.Values{}

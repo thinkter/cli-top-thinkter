@@ -149,6 +149,7 @@ func (s Session) courseResult(name string, o Options) (any, contract.Context, []
 		}
 		materialID, _ := cells.Eq(4).Find("button[name='downloadmat']").Attr("data-fileid")
 		link, _ := row.Find("a[href]").Attr("href")
+		link = normalizeMaterialLink(link)
 		index, _ := strconv.Atoi(strings.TrimSpace(cells.Eq(0).Text()))
 		if index <= 0 {
 			index = i + 1
@@ -228,7 +229,7 @@ func (s Session) materials(course, faculty contract.Choice, materials []types.Co
 				attachments = append(attachments, types.MaterialAttachment{ID: ref.MaterialID, Name: ref.Name, Date: ref.MaterialDate})
 			}
 		}
-		r.Materials = append(r.Materials, types.Material{ID: id, Index: i + 1, Title: m.Topic, Date: m.Date, URL: m.WebLink, Attachments: attachments})
+		r.Materials = append(r.Materials, types.Material{ID: id, Index: i + 1, Title: m.Topic, Date: m.Date, Module: m.MNo, URL: normalizeMaterialLink(m.WebLink), Attachments: attachments})
 	}
 	if o.Materials == "" {
 		return r, nil
@@ -253,11 +254,17 @@ func (s Session) materials(course, faculty contract.Choice, materials []types.Co
 			}
 		}
 		if !downloadable {
+			if strings.TrimSpace(o.Materials) == "0" {
+				continue
+			}
 			return r, contract.New("invalid_selection", "The selected material has no downloadable attachment; inspect its URL instead.")
 		}
 		for j, ref := range m.ReferenceMaterials {
 			if ref.MaterialID == "" {
 				continue
+			}
+			if helpers.IsRateLimitExceeded() {
+				return r, contract.New("policy_blocked", "Download limit reached; try again later.")
 			}
 			path := "/vtop/downloadCourseMaterialFacultyPdf"
 			payload := map[string]string{"fileId": ref.MaterialID, "authorizedID": s.RegNo, "_csrf": s.Cookies.CSRF}
@@ -292,6 +299,22 @@ func (s Session) materials(course, faculty contract.Choice, materials []types.Co
 		}
 	}
 	return r, nil
+}
+
+func normalizeMaterialLink(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || strings.HasPrefix(strings.ToLower(raw), "javascript:") {
+		return ""
+	}
+	base, err := url.Parse("https://vtop.vit.ac.in/")
+	if err != nil {
+		return ""
+	}
+	link, err := url.Parse(raw)
+	if err != nil || strings.EqualFold(link.Scheme, "javascript") {
+		return ""
+	}
+	return base.ResolveReference(link).String()
 }
 func (s Session) syllabusResult(name string, o Options) (any, contract.Context, []contract.Warning, error) {
 	ctx := contract.Context{Source: "syllabus"}

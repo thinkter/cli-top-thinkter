@@ -81,9 +81,16 @@ func (s Session) scheduleResult(name string, o Options) (any, contract.Context, 
 	}
 	d, err := s.document("/vtop/getDateForSemesterPreview", sem.SemID, form(map[string]string{"semSubId": sem.SemID, "authorizedID": s.RegNo, "_csrf": s.Cookies.CSRF, "paramReturnId": "getDateForSemesterPreview"}), "")
 	if err != nil {
+		if name == "timetable" && len(classes) > 0 {
+			return types.TimetableResult{Classes: classes, WorkingSaturdays: []types.CalendarDay{}}, ctx, []contract.Warning{{Kind: contract.From(err).Kind, Message: "Calendar data unavailable; timetable classes are still available.", Component: "class-groups"}}, contract.Wrap("partial_failure", "Timetable loaded, but calendar data could not be retrieved.", err)
+		}
 		return nil, ctx, nil, err
 	}
 	if d.Find("select#classGroupId").Length() == 0 && !emptyPage(d) {
+		if name == "timetable" && len(classes) > 0 {
+			err := parseFailure("class groups")
+			return types.TimetableResult{Classes: classes, WorkingSaturdays: []types.CalendarDay{}}, ctx, []contract.Warning{{Kind: contract.From(err).Kind, Message: "Class-group data unavailable; timetable classes are still available.", Component: "class-groups"}}, contract.Wrap("partial_failure", "Timetable loaded, but calendar data could not be retrieved.", err)
+		}
 		return nil, ctx, nil, parseFailure("class groups")
 	}
 	groups := extractclassgrp(d)
@@ -96,6 +103,10 @@ func (s Session) scheduleResult(name string, o Options) (any, contract.Context, 
 	if name == "class-groups" {
 		return types.OptionsResult{Options: choices, Source: "academic"}, ctx, nil, nil
 	}
+	if len(choices) == 0 && name == "timetable" && len(classes) > 0 {
+		err := contract.New("upstream_error", "VTOP returned no class groups for the timetable.")
+		return types.TimetableResult{Classes: classes, WorkingSaturdays: []types.CalendarDay{}}, ctx, []contract.Warning{{Kind: err.Kind, Message: "Class-group data unavailable; timetable classes are still available.", Component: "class-groups"}}, contract.Wrap("partial_failure", "Timetable loaded, but calendar data could not be retrieved.", err)
+	}
 	group, err := helpers.Choose("class-group", choices, o.ClassGroupID, "", o.ClassGroup)
 	if err != nil {
 		return nil, ctx, nil, err
@@ -104,10 +115,17 @@ func (s Session) scheduleResult(name string, o Options) (any, contract.Context, 
 	payload := map[string]string{"semSubId": sem.SemID, "authorizedID": s.RegNo, "_csrf": s.Cookies.CSRF, "classGroupId": group.ID, "paramReturnId": "getListForSemester"}
 	d, err = s.document("/vtop/getListForSemester", sem.SemID, form(payload), "")
 	if err != nil {
+		if name == "timetable" && len(classes) > 0 {
+			return types.TimetableResult{Classes: classes, WorkingSaturdays: []types.CalendarDay{}}, ctx, []contract.Warning{{Kind: contract.From(err).Kind, Message: "Calendar data unavailable; timetable classes are still available.", Component: "calendar"}}, contract.Wrap("partial_failure", "Timetable loaded, but calendar data could not be retrieved.", err)
+		}
 		return nil, ctx, nil, err
 	}
 	months := readmonths(d)
 	if len(months) == 0 && !emptyPage(d) {
+		if name == "timetable" && len(classes) > 0 {
+			err := parseFailure("calendar months")
+			return types.TimetableResult{Classes: classes, WorkingSaturdays: []types.CalendarDay{}}, ctx, []contract.Warning{{Kind: contract.From(err).Kind, Message: "Calendar months unavailable; timetable classes are still available.", Component: "calendar"}}, contract.Wrap("partial_failure", "Timetable loaded, but calendar data could not be retrieved.", err)
+		}
 		return nil, ctx, nil, parseFailure("calendar months")
 	}
 	days := []types.CalendarDay{}
@@ -117,6 +135,10 @@ func (s Session) scheduleResult(name string, o Options) (any, contract.Context, 
 	for _, date := range months {
 		month, year, e := parseCalendarMonthYear(date)
 		if e != nil {
+			if name == "timetable" && len(classes) > 0 {
+				err := parseFailure("calendar date")
+				return types.TimetableResult{Classes: classes, WorkingSaturdays: []types.CalendarDay{}}, ctx, []contract.Warning{{Kind: contract.From(err).Kind, Message: "Calendar date unavailable; timetable classes are still available.", Component: date}}, contract.Wrap("partial_failure", "Timetable loaded, but calendar data could not be retrieved.", err)
+			}
 			return nil, ctx, nil, parseFailure("calendar date")
 		}
 		payload["calDate"] = date

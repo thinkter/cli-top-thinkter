@@ -77,6 +77,7 @@ type Exam struct {
 	Time     string `json:"time"`
 	Venue    string `json:"venue"`
 	Seat     string `json:"seat"`
+	SeatNo   string `json:"seat_no"`
 	Category string `json:"category"`
 }
 type ExamsResult struct {
@@ -231,6 +232,7 @@ type Material struct {
 	Index       int                  `json:"index"`
 	Title       string               `json:"title"`
 	Date        string               `json:"date"`
+	Module      string               `json:"module"`
 	URL         string               `json:"url"`
 }
 type MaterialsResult struct {

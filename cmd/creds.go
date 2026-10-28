@@ -68,8 +68,11 @@ func authenticate() (features.Session, error) {
 		if e == nil && r != "" {
 			return features.Session{Cookies: c, RegNo: r}, nil
 		}
-		if e != nil && contract.From(e).Kind != "auth_required" {
-			return features.Session{}, e
+		if e != nil {
+			ce := contract.From(e)
+			if ce.Kind != "auth_required" && ce.Status != 404 {
+				return features.Session{}, e
+			}
 		}
 	}
 	username, encrypted, key := get("VTOP_USERNAME"), get("PASSWORD"), get("KEY")
