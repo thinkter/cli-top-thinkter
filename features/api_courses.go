@@ -245,6 +245,9 @@ func (s Session) materials(course, faculty contract.Choice, materials []types.Co
 	if len(invalid) > 0 || len(indices) == 0 {
 		return r, contract.New("invalid_arguments", "Invalid --materials selection.")
 	}
+	if helpers.IsRateLimitExceeded() {
+		return r, contract.New("policy_blocked", "Download limit reached; try again later.")
+	}
 	for _, idx := range indices {
 		m := materials[idx-1]
 		downloadable := false
@@ -262,9 +265,6 @@ func (s Session) materials(course, faculty contract.Choice, materials []types.Co
 		for j, ref := range m.ReferenceMaterials {
 			if ref.MaterialID == "" {
 				continue
-			}
-			if helpers.IsRateLimitExceeded() {
-				return r, contract.New("policy_blocked", "Download limit reached; try again later.")
 			}
 			path := "/vtop/downloadCourseMaterialFacultyPdf"
 			payload := map[string]string{"fileId": ref.MaterialID, "authorizedID": s.RegNo, "_csrf": s.Cookies.CSRF}
